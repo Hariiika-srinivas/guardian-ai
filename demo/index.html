@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guardian AI — Safety Demo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a12;color:#e8e6f0;min-height:100vh}
+header{background:#12121e;border-bottom:1px solid #1e1e2e;padding:16px 24px;display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;background:#8e44ad;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+header h1{font-size:20px;font-weight:700;color:#fff}
+header p{font-size:12px;color:#666}
+.live{margin-left:auto;background:#1a0a0a;border:1px solid #e74c3c;color:#e74c3c;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;display:flex;align-items:center;gap:6px}
+.live-dot{width:7px;height:7px;background:#e74c3c;border-radius:50%;animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+main{max-width:1100px;margin:0 auto;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.card{background:#12121e;border:1px solid #1e1e2e;border-radius:16px;padding:20px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#555;margin-bottom:16px}
+.full{grid-column:1/-1}
+.hr-num{font-size:64px;font-weight:800;text-align:center;line-height:1;transition:color .5s}
+.hr-unit{font-size:14px;color:#666;text-align:center;margin-top:4px}
+.hr-track{height:8px;background:#1e1e2e;border-radius:4px;margin-top:16px;overflow:hidden}
+.hr-fill{height:100%;border-radius:4px;transition:width .8s,background .8s}
+.hr-labels{display:flex;justify-content:space-between;font-size:11px;color:#333;margin-top:4px}
+.score-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+.ring-wrap{position:relative;width:150px;height:150px}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.ring-num{font-size:42px;font-weight:800;transition:color .5s}
+.ring-lbl{font-size:11px;color:#666;text-transform:uppercase}
+.level-badge{font-size:13px;font-weight:700;padding:6px 18px;border-radius:20px}
+.lv-low{background:#0d1f0d;color:#2ecc71}
+.lv-medium{background:#1f1900;color:#f1c40f}
+.lv-high{background:#1f0d00;color:#e67e22}
+.lv-critical{background:#1f0000;color:#e74c3c}
+.signals{display:flex;flex-direction:column;gap:14px}
+.sig-row{display:flex;align-items:center;gap:10px;font-size:13px}
+.sig-name{color:#888;min-width:90px}
+.sig-track{flex:1;height:5px;background:#1e1e2e;border-radius:3px;overflow:hidden}
+.sig-fill{height:100%;border-radius:3px;transition:width .7s,background .7s}
+.sig-val{min-width:80px;text-align:right;font-weight:600;font-size:12px}
+.reasons{display:flex;flex-direction:column;gap:8px;min-height:60px}
+.reason{font-size:12px;color:#e67e22;background:#1a0f00;padding:7px 12px;border-radius:6px;border-left:3px solid #e67e22;line-height:1.4}
+.no-threat{color:#444;font-size:13px}
+.btns{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.btn{padding:14px 10px;border-radius:12px;border:2px solid;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:inherit;transition:.15s;text-align:center;line-height:1.6}
+.btn:hover{transform:translateY(-2px)}
+.btn-ex{border-color:#2980b9;color:#2980b9}
+.btn-ex:hover{background:#0a1520}
+.btn-dng{border-color:#e74c3c;color:#e74c3c}
+.btn-dng:hover{background:#1a0505}
+.btn-ok{border-color:#2ecc71;color:#2ecc71}
+.btn-ok:hover{background:#051205}
+.sos{grid-column:1/-1;padding:22px;border-radius:14px;border:none;background:#e74c3c;color:#fff;font-size:16px;font-weight:800;cursor:pointer;transition:.15s;text-align:center;line-height:1.6;width:100%}
+.sos:hover{background:#c0392b}
+.statusbar{grid-column:1/-1;border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:14px;border:1px solid #1a3a1a;background:#0d1a0d;transition:background .5s,border-color .5s}
+.st-icon{font-size:22px}
+.st-main{font-size:14px;font-weight:700;color:#2ecc71;display:block}
+.st-sub{font-size:12px;color:#555}
+.log-wrap{grid-column:1/-1}
+.log{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;font-family:monospace;font-size:12px}
+.log-row{display:flex;gap:10px}
+.log-t{color:#444;min-width:48px}
+.log-m{line-height:1.5}
+.c-g{color:#2ecc71}.c-r{color:#e74c3c}.c-a{color:#f39c12}.c-b{color:#3498db}
+.auth-form{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em}
+.fg input{background:#0a0a12;border:1px solid #2a2a3a;color:#e8e6f0;border-radius:8px;padding:10px 14px;font-size:13px;min-width:180px;outline:none}
+.fg input:focus{border-color:#8e44ad}
+.abtn{padding:10px 18px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer}
+.abtn-reg{background:#8e44ad;color:#fff}
+.abtn-log{background:#1e1e2e;color:#aaa;border:1px solid #333}
+.auth-msg{margin-top:10px;font-size:13px;color:#666}
+.auth-msg.ok{color:#2ecc71}
+.auth-msg.err{color:#e74c3c}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🛡️</div>
+  <div>
+    <h1>Guardian AI</h1>
+    <p>Women Safety Intelligence System — Live Demo</p>
+  </div>
+  <div class="live"><div class="live-dot"></div>LIVE</div>
+</header>
+
+<main>
+
+  <div class="card full">
+    <div class="card-title">Step 1 — Create your account</div>
+    <div class="auth-form">
+      <div class="fg">
+        <label>Full Name</label>
+        <input id="i-name" value="Priya Sharma" placeholder="Your name">
+      </div>
+      <div class="fg">
+        <label>Phone (with country code)</label>
+        <input id="i-phone" value="+919876543210" placeholder="+919876543210">
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <input id="i-pass" type="password" value="demo123" placeholder="min 6 chars">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="abtn abtn-reg" id="reg-btn">Register</button>
+        <button class="abtn abtn-log" id="log-btn">Login</button>
+      </div>
+    </div>
+    <div class="auth-msg" id="auth-msg">Not logged in — register or login to start monitoring</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Heart Rate — Smartwatch Feed</div>
+    <div class="hr-num" id="hr-val" style="color:#2ecc71">72</div>
+    <div class="hr-unit">BPM</div>
+    <div class="hr-track"><div class="hr-fill" id="hr-bar" style="width:20%;background:#2ecc71"></div></div>
+    <div class="hr-labels"><span>40</span><span>Normal: 60–100</span><span>200</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">AI Threat Score</div>
+    <div class="score-wrap">
+      <div class="ring-wrap">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="60" fill="none" stroke="#1e1e2e" stroke-width="13"/>
+          <circle id="ring" cx="75" cy="75" r="60" fill="none" stroke="#2ecc71" stroke-width="13"
+            stroke-dasharray="377" stroke-dashoffset="377" stroke-linecap="round"
+            style="transition:stroke-dashoffset .8s,stroke .8s"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-num" id="score-num" style="color:#2ecc71">0</div>
+          <div class="ring-lbl">/ 100</div>
+        </div>
+      </div>
+      <div class="level-badge lv-low" id="lvl-badge">SAFE</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Signal Breakdown</div>
+    <div class="signals">
+      <div class="sig-row">
+        <span class="sig-name">Heart Rate</span>
+        <div class="sig-track"><div class="sig-fill" id="s-hr" style="width:0%;background:#2ecc71"></div></div>
+        <span class="sig-val c-g" id="sv-hr">72 BPM</span>
+      </div>
+      <div class="sig-row">
+        <span class="sig-name">Movement</span>
+        <div class="sig-track"><div class="sig-fill" id="s-mv" style="width:0%;background:#2ecc71"></div></div>
+        <span class="sig-val c-g" id="sv-mv">Calm</span>
+      </div>
+      <div class="sig-row">
+        <span class="sig-name">Location</span>
+        <div class="sig-track"><div class="sig-fill" id="s-lo" style="width:0%;background:#2ecc71"></div></div>
+        <span class="sig-val c-g" id="sv-lo">Safe zone</span>
+      </div>
+      <div class="sig-row">
+        <span class="sig-name">Sound</span>
+        <div class="sig-track"><div class="sig-fill" id="s-sn" style="width:0%;background:#2ecc71"></div></div>
+        <span class="sig-val c-g" id="sv-sn">45 dB</span>
+      </div>
+      <div class="sig-row">
+        <span class="sig-name">Time of Day</span>
+        <div class="sig-track"><div class="sig-fill" id="s-td" style="width:0%;background:#2ecc71"></div></div>
+        <span class="sig-val c-g" id="sv-td">Daytime</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">AI Trigger Reasons</div>
+    <div class="reasons" id="reasons">
+      <div class="no-threat">No threats detected — all signals normal</div>
+    </div>
+  </div>
+
+  <div class="btns">
+    <button class="btn btn-ex" id="btn-exercise">
+      🏃 Simulate Exercise<br>
+      <span style="font-size:11px;font-weight:400;opacity:.7">High HR — AI will NOT alert</span>
+    </button>
+    <button class="btn btn-dng" id="btn-danger">
+      ⚠️ Simulate Danger<br>
+      <span style="font-size:11px;font-weight:400;opacity:.7">Multiple signals — Alert fires</span>
+    </button>
+    <button class="btn btn-ok" id="btn-normal">
+      ✅ Reset Normal<br>
+      <span style="font-size:11px;font-weight:400;opacity:.7">All signals safe</span>
+    </button>
+  </div>
+
+  <button class="sos" id="btn-sos">
+    🆘 TRIGGER REAL EMERGENCY ALERT<br>
+    <span style="font-size:13px;font-weight:400;opacity:.85">Makes a REAL phone call to your emergency contact via Twilio</span>
+  </button>
+
+  <div class="statusbar" id="statusbar">
+    <div class="st-icon" id="st-icon">🟢</div>
+    <div>
+      <span class="st-main" id="st-main">All systems normal</span>
+      <span class="st-sub" id="st-sub">Monitoring active — sending data every 5 seconds</span>
+    </div>
+  </div>
+
+  <div class="card log-wrap">
+    <div class="card-title">Live System Log</div>
+    <div class="log" id="log">
+      <div class="log-row"><span class="log-t">00:00</span><span class="log-m c-b">Guardian AI initialized — waiting for login</span></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+var API = 'http://localhost:3000/api/v1';
+var token = null;
+var currentScenario = 'normal';
+var monitorInterval = null;
+var lastThreatId = null;
+var alertFired = false;
+
+function addLog(msg, cls) {
+  cls = cls || '';
+  var d = new Date();
+  var t = pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  var log = document.getElementById('log');
+  var row = document.createElement('div');
+  row.className = 'log-row';
+  row.innerHTML = '<span class="log-t">' + t + '</span><span class="log-m ' + cls + '">' + msg + '</span>';
+  log.insertBefore(row, log.firstChild);
+}
+
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function setStatus(icon, main, sub, bg, border, color) {
+  var bar = document.getElementById('statusbar');
+  if (bar) { bar.style.background = bg; bar.style.borderColor = border; }
+  var ic = document.getElementById('st-icon');
+  if (ic) ic.textContent = icon;
+  var m = document.getElementById('st-main');
+  if (m) { m.textContent = main; m.style.color = color; }
+  var s = document.getElementById('st-sub');
+  if (s) s.textContent = sub;
+}
+
+function updateUI(sensor, assessment) {
+  var hr = sensor.heart_rate;
+  var score = assessment.score;
+
+  var hrPct = Math.min(100, ((hr - 40) / 160) * 100);
+  var hrColor = hr < 100 ? '#2ecc71' : hr < 140 ? '#f39c12' : '#e74c3c';
+  var hrEl = document.getElementById('hr-val');
+  if (hrEl) { hrEl.textContent = hr; hrEl.style.color = hrColor; }
+  var hrBar = document.getElementById('hr-bar');
+  if (hrBar) { hrBar.style.width = hrPct + '%'; hrBar.style.background = hrColor; }
+
+  var circ = 377;
+  var offset = circ - (score / 100) * circ;
+  var sc = score < 30 ? '#2ecc71' : score < 55 ? '#f39c12' : score < 70 ? '#e67e22' : '#e74c3c';
+  var ring = document.getElementById('ring');
+  if (ring) { ring.style.strokeDashoffset = offset; ring.style.stroke = sc; }
+  var snum = document.getElementById('score-num');
+  if (snum) { snum.textContent = score; snum.style.color = sc; }
+
+  var lvlMap = {
+    low:      ['lv-low',      'SAFE'],
+    medium:   ['lv-medium',   'CAUTION'],
+    high:     ['lv-high',     'HIGH RISK'],
+    critical: ['lv-critical', 'CRITICAL']
+  };
+  var badge = document.getElementById('lvl-badge');
+  if (badge) {
+    var lv = lvlMap[assessment.level] || ['lv-low', 'SAFE'];
+    badge.className = 'level-badge ' + lv[0];
+    badge.textContent = lv[1];
+  }
+
+  setSig('s-hr','sv-hr', Math.min(100,((hr-40)/160)*100), hr + ' BPM');
+  setSig('s-mv','sv-mv', Math.min(100,(sensor.accel_variance/3)*100), sensor.accel_variance > 1.5 ? 'Erratic!' : 'Normal');
+  setSig('s-lo','sv-lo', sensor.is_isolated ? (sensor.hour_of_day > 21 || sensor.hour_of_day < 6 ? 100 : 50) : 5, sensor.is_isolated ? 'Isolated!' : 'Safe zone');
+  setSig('s-sn','sv-sn', Math.min(100,Math.max(0,((sensor.ambient_db-40)/60)*100)), sensor.ambient_db + ' dB');
+  setSig('s-td','sv-td', (sensor.hour_of_day < 6 || sensor.hour_of_day > 21) ? 85 : 10, sensor.hour_of_day + ':00 hrs');
+
+  var box = document.getElementById('reasons');
+  if (box) {
+    if (assessment.reasons && assessment.reasons.length > 0) {
+      box.innerHTML = assessment.reasons.map(function(r){ return '<div class="reason">' + r + '</div>'; }).join('');
+    } else {
+      box.innerHTML = '<div class="no-threat">No threats detected — all signals normal</div>';
+    }
+  }
+
+  if (score >= 65) {
+    setStatus('🚨','CRITICAL THREAT — Alert triggered','Emergency contacts being notified','#1a0000','#5a0000','#e74c3c');
+  } else if (score >= 50) {
+    setStatus('⚠️','HIGH RISK — Monitoring closely','Will alert if signals persist','#1a0f00','#4a2500','#e67e22');
+  } else if (score >= 30) {
+    setStatus('🟡','Elevated signals detected','Watching for escalation','#1a1500','#3a3000','#f1c40f');
+  } else if (currentScenario === 'exercise') {
+    setStatus('🏃','Exercise mode — high HR suppressed','AI correctly NOT alerting during workout','#001525','#003555','#3498db');
+  } else {
+    setStatus('🟢','All systems normal','Monitoring active — all signals safe','#0d1a0d','#1a3a1a','#2ecc71');
+  }
+}
+
+function setSig(barId, valId, pct, label) {
+  var c = pct < 35 ? '#2ecc71' : pct < 65 ? '#f39c12' : '#e74c3c';
+  var cc = pct < 35 ? 'c-g' : pct < 65 ? 'c-a' : 'c-r';
+  var bar = document.getElementById(barId);
+  if (bar) { bar.style.width = Math.round(pct) + '%'; bar.style.background = c; }
+  var val = document.getElementById(valId);
+  if (val) { val.textContent = label; val.className = 'sig-val ' + cc; }
+}
+
+function getSensorData() {
+  var h = new Date().getHours();
+  if (currentScenario === 'exercise') {
+    return { heart_rate: 140 + Math.round(Math.random()*20), accel_x:1.2, accel_y:0.9, accel_z:1.4, accel_variance:0.25, latitude:12.9716, longitude:77.5946, speed_mps:3.1, is_isolated:false, ambient_db:55, battery_level:80, baseline_hr:70, activity_context:'exercise', hour_of_day:h };
+  }
+  if (currentScenario === 'danger') {
+    return { heart_rate: 165 + Math.round(Math.random()*20), accel_x:3.2, accel_y:2.9, accel_z:3.6, accel_variance:2.9, latitude:12.9352, longitude:77.6244, speed_mps:5.9, is_isolated:true, ambient_db:91, battery_level:42, baseline_hr:70, activity_context:'unknown', hour_of_day:23 };
+  }
+  return { heart_rate: 68 + Math.round(Math.random()*8), accel_x:0.1, accel_y:0.08, accel_z:0.1, accel_variance:0.08, latitude:12.9716, longitude:77.5946, speed_mps:0.3, is_isolated:false, ambient_db:44, battery_level:92, baseline_hr:70, activity_context:'resting', hour_of_day:h };
+}
+
+function startMonitoring() {
+  if (monitorInterval) clearInterval(monitorInterval);
+  monitorInterval = setInterval(tick, 5000);
+  addLog('Monitoring started — sending data every 5 seconds', 'c-g');
+  tick();
+}
+
+function tick() {
+  if (!token) return;
+  var sensor = getSensorData();
+  fetch(API + '/threat/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify(sensor)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.assessment) {
+      updateUI(sensor, d.assessment);
+      if (d.assessment.threat_event_id) lastThreatId = d.assessment.threat_event_id;
+      if (d.assessment.score >= 65 && currentScenario === 'danger' && !alertFired) {
+        alertFired = true;
+        addLog('CRITICAL score ' + d.assessment.score + '/100 — auto-triggering alert', 'c-r');
+        triggerSOS();
+      }
+    } else {
+      addLog('API error: ' + (d.error || 'unknown'), 'c-a');
+    }
+  })
+  .catch(function(){ addLog('Connection error — is backend running on port 3000?', 'c-a'); });
+}
+
+function triggerSOS() {
+  if (!token) { alert('Please register or login first!'); return; }
+  addLog('🚨 Triggering REAL emergency alert via Twilio...', 'c-r');
+  setStatus('🚨','CALLING EMERGENCY CONTACT NOW','Check your phone — call incoming!','#1a0000','#5a0000','#e74c3c');
+  fetch(API + '/alert/trigger', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({
+      threat_event_id: lastThreatId || null,
+      latitude: currentScenario === 'danger' ? 12.9352 : 12.9716,
+      longitude: currentScenario === 'danger' ? 77.6244 : 77.5946,
+      threat_score: currentScenario === 'danger' ? 87 : 75
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.contacts_alerted !== undefined) {
+      addLog('Alert sent to ' + d.contacts_alerted + ' contact(s)', 'c-g');
+      if (d.results) {
+        d.results.forEach(function(res){
+          if (res.sms)  addLog('SMS to ' + res.contact + ': ' + res.sms,  res.sms  === 'sent'      ? 'c-g' : 'c-r');
+          if (res.call) addLog('Call to ' + res.contact + ': ' + res.call, res.call === 'initiated' ? 'c-g' : 'c-r');
+          if (res.error) addLog('Error: ' + res.error, 'c-r');
+        });
+      }
+    } else {
+      addLog('Alert failed: ' + (d.error || 'unknown error'), 'c-r');
+    }
+  })
+  .catch(function(e){ addLog('Alert request failed: ' + e.message, 'c-r'); });
+}
+
+function register() {
+  var name  = document.getElementById('i-name').value.trim();
+  var phone = document.getElementById('i-phone').value.trim();
+  var pass  = document.getElementById('i-pass').value;
+  var msg   = document.getElementById('auth-msg');
+  if (!name || !phone || !pass) { msg.textContent = 'Please fill all fields'; msg.className = 'auth-msg err'; return; }
+  msg.textContent = 'Registering...'; msg.className = 'auth-msg';
+  fetch(API + '/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ full_name: name, phone_number: phone, password: pass })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.token) {
+      token = d.token;
+      msg.textContent = 'Registered as ' + d.user.full_name + ' — monitoring started';
+      msg.className = 'auth-msg ok';
+      addLog('Registered: ' + d.user.full_name, 'c-g');
+      var cp = prompt('Enter emergency contact phone (+919876543210 format):\nThis person gets the REAL call during demo:');
+      if (cp) {
+        var cn = prompt('Their name:') || 'Emergency Contact';
+        fetch(API + '/contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ full_name: cn, phone_number: cp, relationship: 'family', priority: 1 })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(d){ addLog(d.message ? 'Contact added: ' + cn : 'Contact error: ' + d.error, d.message ? 'c-g' : 'c-r'); })
+        .catch(function(){ addLog('Failed to add contact', 'c-a'); });
+      }
+      startMonitoring();
+    } else {
+      msg.textContent = d.error || 'Registration failed';
+      msg.className = 'auth-msg err';
+      addLog('Register failed: ' + (d.error || 'unknown'), 'c-r');
+    }
+  })
+  .catch(function(){
+    msg.textContent = 'Cannot reach backend — is server running on port 3000?';
+    msg.className = 'auth-msg err';
+    addLog('Connection failed', 'c-r');
+  });
+}
+
+function login() {
+  var phone = document.getElementById('i-phone').value.trim();
+  var pass  = document.getElementById('i-pass').value;
+  var msg   = document.getElementById('auth-msg');
+  msg.textContent = 'Logging in...'; msg.className = 'auth-msg';
+  fetch(API + '/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone_number: phone, password: pass })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.token) {
+      token = d.token;
+      msg.textContent = 'Logged in as ' + d.user.full_name;
+      msg.className = 'auth-msg ok';
+      addLog('Login: ' + d.user.full_name, 'c-g');
+      startMonitoring();
+    } else {
+      msg.textContent = d.error || 'Login failed';
+      msg.className = 'auth-msg err';
+    }
+  })
+  .catch(function(){
+    msg.textContent = 'Cannot reach backend';
+    msg.className = 'auth-msg err';
+  });
+}
+
+// Wire up all buttons using addEventListener — no inline onclick needed
+document.getElementById('reg-btn').addEventListener('click', register);
+document.getElementById('log-btn').addEventListener('click', login);
+document.getElementById('btn-sos').addEventListener('click', triggerSOS);
+document.getElementById('btn-exercise').addEventListener('click', function(){
+  currentScenario = 'exercise'; alertFired = false;
+  addLog('Exercise scenario — high HR will NOT trigger alert', 'c-b');
+});
+document.getElementById('btn-danger').addEventListener('click', function(){
+  currentScenario = 'danger'; alertFired = false;
+  addLog('DANGER scenario — multiple threat signals active', 'c-r');
+});
+document.getElementById('btn-normal').addEventListener('click', function(){
+  currentScenario = 'normal'; alertFired = false;
+  addLog('Reset to normal — all signals safe', 'c-g');
+});
+</script>
+</body>
+</html>
